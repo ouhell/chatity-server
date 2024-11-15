@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Person {
+  id        String   @id @default(uuid()) @db.Uuid
+  firstName String   @db.VarChar(255)
+  lastName  String   @db.VarChar(255)
+  age       Int
+  birthDate DateTime @default(now()) @db.Date
+}
+
+model Message {
+  id          String         @id @default(uuid()) @db.Uuid
+  content     String?
+  recordingId String?        @db.Uuid
+  recording   File?          @relation(fields: [recordingId], references: [id])
+  images      MessageImage[]
+}
+
+model User {
+  id        String  @id @default(uuid()) @db.Uuid
+  username  String  @unique @db.VarChar(255)
+  password  String  @db.VarChar(255)
+  email     String? @db.VarChar(255)
+  imageUrl  String?
+  imageId   String? @db.Uuid
+  imageFile File?   @relation(fields: [imageId], references: [id])
+}
+
+model MessageImage {
+  messageId String  @db.Uuid
+  imageId   String  @db.Uuid
+  image     File    @relation(fields: [imageId], references: [id])
+  message   Message @relation(fields: [messageId], references: [id])
+
+  @@id([messageId, imageId])
+}
+
+model File {
+  id                String         @id @default(uuid()) @db.Uuid
+  type              FileType
+  url               String
+  extension         String
+  name              String
+  recordingMessages Message[]
+  messageImages     MessageImage[]
+  imageUsers        User[]
+}
+
+enum FileType {
+  IMAGE
+  VIDEO
+  AUDIO
+}
