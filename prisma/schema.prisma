@@ -21,8 +21,52 @@ model Message {
   recordingId String?        @db.Uuid
   recording   File?          @relation(fields: [recordingId], references: [id])
   images      MessageImage[]
+  sender User @relation(fields: [senderId], references: [id])
+  senderId String @db.Uuid
+  conversation Conversation @relation(fields: [conversationId], references: [id] , name: "message-convo")
+  conversationId String @db.Uuid 
+  createdAt DateTime @db.Timestamp() @default(now())
+  updatedAt DateTime @db.Timestamp() @updatedAt 
+  isEdited Boolean 
+  @@index(fields: [createdAt(sort: Desc)] )
 }
 
+model Conversation {
+  id String @id @db.Uuid @default(uuid())
+  name String? @db.VarChar(255)
+  messages Message[] @relation(name: "message-convo")
+  users ConversationUser[]
+  isPublic Boolean 
+  isDui Boolean
+  createdAt DateTime @db.Timestamp() @default(now())
+  updatedAt DateTime @db.Timestamp() @updatedAt 
+
+
+}
+
+
+enum ConversationRole {
+  ADMIN
+  CHATTER
+}
+
+
+model ConversationUser {
+  user User @relation(fields: [userId],references: [id])
+  userId String @db.Uuid
+  conversation Conversation @relation(fields: [conversationId] , references: [id])
+  conversationId String @db.Uuid
+  role ConversationRole 
+  isBlocked Boolean @default(false)
+
+  @@id([userId,conversationId])
+}
+
+
+enum UserRole {
+  BASIC
+  ADMIN
+}
 model User {
   id        String  @id @default(uuid()) @db.Uuid
   username  String  @unique @db.VarChar(255)
@@ -30,7 +74,22 @@ model User {
   email     String? @db.VarChar(255)
   imageUrl  String?
   imageId   String? @db.Uuid
+  role UserRole 
   imageFile File?   @relation(fields: [imageId], references: [id])
+  messages Message[]
+  conversations ConversationUser[]
+  blackListed UserBlackList[] @relation(name : "black_lister-user")
+  blackListedBy UserBlackList[] @relation(name : "black_listed-user")
+}
+
+
+model UserBlackList {
+  blackLister User @relation(fields: [blackListerId], references: [id], name: "black_lister-user")
+  blackListerId String @db.Uuid 
+  blackListed User @relation(fields : [blackListedId] , references: [id],  name: "black_listed-user")
+  blackListedId String @db.Uuid 
+
+  @@id([blackListedId,blackListerId])
 }
 
 model MessageImage {
