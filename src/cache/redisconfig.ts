@@ -1,17 +1,25 @@
 import { RedisClientType } from "redis";
-import Redis from "redis";
+import { createClient } from "redis";
 
 type RedisConfig = {
-  client: ReturnType<(typeof Redis)["createClient"]> | null;
+  client: ReturnType<typeof createClient> | null;
 };
 
-export const redisConfig = {
+const redisConfig: RedisConfig = {
   client: null,
 };
 
-// export const getRedisClient = async () : RedisConfig["client"]! => {
-//       let client = redisConfig.client;
-//       if(!redisConfig.client) {
-//        client = Redis.createClient();
-//       }
-// }
+export const getRedisClient = async () => {
+  let client = redisConfig.client;
+  if (!redisConfig.client) {
+    client = await createClient()
+      .on("error", (err) => console.log("Redis Client Error", err))
+      .connect()
+      .then((res) => {
+        console.log("connected to redis");
+        return res;
+      });
+    redisConfig.client = client;
+  }
+  return client;
+};

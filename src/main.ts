@@ -13,6 +13,10 @@ import { z } from "zod";
 import prisma from "./database/databaseClient";
 import session from "express-session";
 import { applicationBootEnv } from "./env/environmentProvider";
+import { getRedisClient } from "./cache/redisconfig";
+import { AuthRouter } from "./routes/v1/AuthRouter";
+import { UserRouter } from "./routes/v1/UserRouter";
+import { errorHandler } from "./middleware/errorHandler";
 const app = express();
 
 const initApp = async () => {
@@ -24,13 +28,7 @@ const initApp = async () => {
   }
 
   console.log();
-  const redisClient = await createClient()
-    .on("error", (err) => console.log("Redis Client Error", err))
-    .connect()
-    .then((res) => {
-      console.log("connected to redis");
-      return res;
-    });
+  const redisClient = await getRedisClient();
 
   let redisStore = new RedisStore({
     client: redisClient,
@@ -59,58 +57,16 @@ const initApp = async () => {
     email: z.string().optional(),
   });
 
-  app.post("/api/signin", async (req, res) => {
-    const body = signinRequestTemplate.parse(req.body);
+  // routers setup
 
-    const hashedPwd = await bcrypt.hash(body.password, 12);
-    const newUser = await prisma.user.create({
-      data: {
-        username: body.username,
-        password: hashedPwd,
-        email: body.email,
-        role: "BASIC",
-      },
-    });
-
-    res.status(201).json(newUser);
-    return;
-  });
-
-  const loginRequestTemplate = z.object({
-    username: z.string(),
-    password: z.string(),
-  });
+  app.use(AuthRouter);
+  app.use(UserRouter);
 
   app.get("/api/isLoged", (req, res) => {
     res.json(req.session?.user);
   });
-  app.post("/api/login", async (req, res, next) => {
-    const loginBody = loginRequestTemplate.parse(req.body);
-    const user = await prisma.user.findUnique({
-      where: {
-        username: loginBody.username,
-      },
-    });
 
-    if (!user) {
-      return next("username does not exist");
-    }
-    const password = user.password;
-
-    const isMatch = await bcrypt.compare(loginBody.password, password);
-
-    if (!isMatch) {
-      return next("incorrect password");
-    }
-    req.session.user = {
-      id: user.id,
-      username: user.username,
-      email: user.email ?? undefined,
-      role: user.role,
-    };
-
-    res.json(user);
-  });
+  app.use(errorHandler);
 
   const PORT = process.env.PORT ?? 4000;
 

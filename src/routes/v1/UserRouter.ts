@@ -2,10 +2,11 @@ import express from "express";
 import { User } from "@prisma/client";
 import prisma from "../../database/databaseClient";
 import { fetchUsers } from "../../controllers/v1/UserController";
+import { simpleCheckCache } from "../../middleware/cache/cacheMiddlewares";
 
-const UserRouter = express.Router();
+export const UserRouter = express.Router();
 
-UserRouter.get("/api/v1/users", fetchUsers);
+UserRouter.get("/api/v1/users", simpleCheckCache(), fetchUsers);
 
 UserRouter.get("/api/v1/users/:userId", async (req, res) => {
   const user = prisma.user.findUnique({
@@ -20,5 +21,3 @@ UserRouter.get("/api/v1/users/:userId", async (req, res) => {
   res.json(user);
   return;
 });
-
-UserRouter.post("/api/v1/users", (req, res, next) => {});
