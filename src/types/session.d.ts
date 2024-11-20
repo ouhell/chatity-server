@@ -4,7 +4,7 @@ import express = require("express");
 export type SessionUser = {
   id: string;
   username: string;
-  email?: string;
+  email: string;
   role: UserRole;
 };
 

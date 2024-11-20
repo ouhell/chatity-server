@@ -10,6 +10,7 @@ import bcrypt from "bcrypt";
 import logger from "./utils/logger";
 import cookieParser from "cookie-parser";
 import { z } from "zod";
+import cors from "cors";
 import prisma from "./database/databaseClient";
 import session from "express-session";
 import { applicationBootEnv } from "./env/environmentProvider";
@@ -34,7 +35,7 @@ const initApp = async () => {
     client: redisClient,
     prefix: "next-chat-store:",
   });
-
+  app.use(cors());
   app.use(express.static(path.join(__dirname, "..", "public")));
   app.use(express.json());
   app.use(cookieParser());
