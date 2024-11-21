@@ -7,6 +7,7 @@ export const getJsonCache = async (cacheKey: string) => {
   if (!redisClient) return null;
 
   const cache = await redisClient.get(cacheKey);
+
   if (!cache) return null;
   const jsonCache = JSON.parse(cache);
   logger.info("cache found for key :" + cacheKey);

@@ -5,7 +5,8 @@ import { getJsonCache } from "../../cache/cacheOperations";
 
 export const simpleCheckCache: () => RequestHandler =
   () => async (req, res, next) => {
-    const cachekey = req.cacheKey ?? extractCacheKey(req);
+    const cachekey = extractCacheKey(req);
+    console.log("cache key is ", cachekey);
 
     const cacheJson = await getJsonCache(cachekey);
     if (!cacheJson) return next();
