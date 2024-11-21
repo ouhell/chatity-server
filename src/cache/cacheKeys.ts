@@ -1,14 +1,13 @@
 import { Request } from "express";
 
 export const extractCacheKey = (request: Request) => {
+  if (request.cacheKey) return request.cacheKey;
   const route = request.path;
   const queryParams = request.query;
   const base = "new-chat-cache-" + route;
-  console.log("got here 0");
   if (!queryParams) return base;
   const paramKeys = Object.keys(queryParams).sort();
   if (!paramKeys.length) return base;
-  console.log("got here 2");
   let paramSignature = "";
 
   paramKeys.forEach((key, i) => {
@@ -38,5 +37,8 @@ export const extractCacheKey = (request: Request) => {
 
   if (!paramSignature) return base;
 
-  return base + "?" + paramSignature;
+  const cachedKey = base + "?" + paramSignature;
+
+  request.cacheKey = cachedKey;
+  return cachedKey;
 };
