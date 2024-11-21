@@ -1,15 +1,20 @@
 import express from "express";
-import {
-  fetchConversationMessages,
-  fetchConversations,
-} from "../../controllers/v1/ConversationController";
+import ConversationController from "../../controllers/v1/ConversationController";
 import { isAuthenticated } from "../../middleware/authentication/authCheckMiddlewares";
-export const ConservationRouter = express.Router();
+export const ConversationRouter = express.Router();
 
-ConservationRouter.get("/api/v1/conversations", fetchConversations);
+ConversationRouter.get(
+  "/api/v1/conversations",
+  ConversationController.fetchConversations
+);
 
-ConservationRouter.get(
-  "/api/v1/conversations/:conversationId",
+ConversationRouter.get(
+  "/api/v1/conversations/:conversationId/messages",
   isAuthenticated(),
-  fetchConversationMessages
+  ConversationController.fetchConversationMessages
+);
+
+ConversationRouter.post(
+  "/api/v1/conversations/:conversationId/messages",
+  ConversationController.postConversationMessage
 );

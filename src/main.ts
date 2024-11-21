@@ -18,6 +18,7 @@ import { getRedisClient } from "./cache/redisconfig";
 import { AuthRouter } from "./routes/v1/AuthRouter";
 import { UserRouter } from "./routes/v1/UserRouter";
 import { errorHandler } from "./middleware/errorHandler";
+import { ConversationRouter } from "./routes/v1/ConservationRouter";
 const app = express();
 
 const initApp = async () => {
@@ -52,16 +53,11 @@ const initApp = async () => {
     })
   );
 
-  const signinRequestTemplate = z.object({
-    username: z.string(),
-    password: z.string(),
-    email: z.string().optional(),
-  });
-
   // routers setup
 
   app.use(AuthRouter);
   app.use(UserRouter);
+  app.use(ConversationRouter);
 
   app.get("/api/isLoged", (req, res) => {
     res.json(req.session?.user);

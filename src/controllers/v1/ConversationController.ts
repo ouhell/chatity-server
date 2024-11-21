@@ -6,9 +6,11 @@ import { z } from "zod";
 import { ApiError } from "../../errors/ApiError";
 const fetchConversationsQuery = z.object({
   cursor: z.string().optional(),
-  pageSize: z.number().lt(200).gt(0).default(20),
+  pageSize: z.number().lt(200).gt(0).default(30),
 });
-export const fetchConversations: RequestHandler = errorCatch(
+
+// * exportable
+const fetchConversations: RequestHandler = errorCatch(
   async (req, res, next) => {
     const { cursor, pageSize } = fetchConversationsQuery.parse(req.params);
     const user = req.session.user!;
@@ -65,7 +67,8 @@ const fetchConvoMessagesStringQuery = z.object({
   pageSize: z.number().lt(200).gt(0).default(30),
 });
 
-export const fetchConversationMessages: RequestHandler = errorCatch(
+// * exportable
+const fetchConversationMessages: RequestHandler = errorCatch(
   async (req, res, next) => {
     const { cursor, pageSize } = fetchConvoMessagesStringQuery.parse(req.query);
     const user = req.session.user!;
@@ -108,3 +111,56 @@ export const fetchConversationMessages: RequestHandler = errorCatch(
     return;
   }
 );
+
+const postConvoMessageRequestTemplate = z.object({
+  content: z.string(),
+});
+
+// * exportable
+const postConversationMessage: RequestHandler = errorCatch(
+  async (req, res, next) => {
+    const body = postConvoMessageRequestTemplate.parse(req.body);
+    const { conversationId } = req.params;
+    const user = req.session.user!;
+    const conversationUser = await prisma.conversationUser.findFirst({
+      where: {
+        userId: user.id,
+        conversationId: conversationId,
+      },
+    });
+
+    if (!conversationUser) {
+      return next(
+        ApiError.notFound(
+          "conversation doesnt exist or user is not a member of the conversation"
+        )
+      );
+    }
+
+    if (conversationUser.isBlocked) {
+      return next(ApiError.forbidden("user is blocked"));
+    }
+
+    const newMessage = await prisma.message.create({
+      data: {
+        isEdited: false,
+        content: body.content,
+        conversationId: conversationId,
+        senderId: user.id,
+      },
+      // include: {
+      //   images: true,
+      //   recording: true,
+      // },
+    });
+
+    res.status(201).json(newMessage);
+    return;
+  }
+);
+
+export default {
+  postConversationMessage,
+  fetchConversationMessages,
+  fetchConversations,
+};
