@@ -11,7 +11,7 @@ import logger from "../../utils/logger";
 const getUserSession = async (req: Request) => {
   return {
     logged: !!req.session.user,
-    sessionUse: req.session.user,
+    sessionUser: req.session.user,
   };
 };
 
