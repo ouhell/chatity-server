@@ -6,13 +6,22 @@ import { ApiError } from "../../errors/ApiError";
 import bcrypt from "bcrypt";
 import { User, UserRole } from "@prisma/client";
 import { applicationBootEnv } from "../../env/environmentProvider";
+import logger from "../../utils/logger";
 
-const authenticateUser = (request: Request, user: User) => {
+const getUserSession = async (req: Request) => {
+  return {
+    logged: !!req.session.user,
+    sessionUse: req.session.user,
+  };
+};
+
+const authenticateUser = async (request: Request, user: User) => {
   request.session.user = {
     id: user.id,
     role: user.role,
     username: user.username,
     email: user.email,
+    picture_url: user.imageUrl,
   };
 
   return { ...request.session.user };
@@ -49,7 +58,7 @@ const credentialLogin: RequestHandler = errorCatch(async (req, res, next) => {
     return next(ApiError.unAuthorized("incorrect password"));
   }
 
-  const sessionUser = authenticateUser(req, user);
+  const sessionUser = await authenticateUser(req, user);
 
   res.json(sessionUser);
   return;
@@ -106,7 +115,7 @@ export const credentialSignUp: RequestHandler = errorCatch(
         role: UserRole.BASIC,
       },
     });
-    const sessionUser = authenticateUser(req, newUser);
+    const sessionUser = await authenticateUser(req, newUser);
     res.status(201).json(sessionUser);
     return;
   }
@@ -179,6 +188,7 @@ const fetchUserGoogleInfo = async (req: Request, next: NextFunction) => {
 
 // * exportable
 const googleOauthLogin: RequestHandler = errorCatch(async (req, res, next) => {
+  logger.info("entered path");
   const userInfo = await fetchUserGoogleInfo(req, next);
   const sameEmailUser = await prisma.user.findFirst({
     where: {
@@ -187,7 +197,9 @@ const googleOauthLogin: RequestHandler = errorCatch(async (req, res, next) => {
   });
 
   if (sameEmailUser && sameEmailUser?.oauthIdentifier === userInfo.sub) {
-    const sessionUser = authenticateUser(req, sameEmailUser);
+    const sessionUser = await authenticateUser(req, sameEmailUser);
+    logger.info("user exists " + sessionUser.username);
+
     res.json(sessionUser);
     return;
   }
@@ -222,9 +234,33 @@ const googleOauthLogin: RequestHandler = errorCatch(async (req, res, next) => {
     },
   });
 
-  const sessionUser = authenticateUser(req, newUser);
-  res.status(201).json(sessionUser);
+  const sessionUser = await authenticateUser(req, newUser);
+  logger.info("user logged", sessionUser.username);
+  res.status(200).json(sessionUser);
   return;
 });
 
-export default { googleOauthLogin, credentialLogin, credentialSignUp };
+// * export
+const fetchSession: RequestHandler = async (req, res, next) => {
+  const userSession = await getUserSession(req);
+  res.status(200).json(userSession);
+};
+
+// * export
+const deleteSession: RequestHandler = async (req, res, next) => {
+  if (!req.session.user) {
+    return next(ApiError.badRequest());
+  }
+
+  req.session.destroy(() => {});
+  res.sendStatus(204);
+  return;
+};
+
+export default {
+  googleOauthLogin,
+  credentialLogin,
+  credentialSignUp,
+  fetchSession,
+  deleteSession,
+};

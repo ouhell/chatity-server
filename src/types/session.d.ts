@@ -6,6 +6,7 @@ export type SessionUser = {
   username: string;
   email: string;
   role: UserRole;
+  picture_url?: string | null;
 };
 
 declare module "express-session" {

@@ -36,7 +36,14 @@ const initApp = async () => {
     client: redisClient,
     prefix: "next-chat-store:",
   });
-  app.use(cors());
+  app.disable("etag");
+  app.use(
+    cors({
+      origin: "http://localhost:3000",
+      methods: ["POST", "PUT", "GET", "DELETE", "OPTIONS", "HEAD"],
+      credentials: true,
+    })
+  );
   app.use(express.static(path.join(__dirname, "..", "public")));
   app.use(express.json());
   app.use(cookieParser());
@@ -46,8 +53,11 @@ const initApp = async () => {
       saveUninitialized: false,
       resave: false,
       cookie: {
-        maxAge: 1000 * 60 * 60 * 24 * 3, // 3 days
+        maxAge: 1000 * 60 * 60 * 24 * 3, // 3 days,
+        secure: false,
+        httpOnly: true,
       },
+
       name: "next-chat-session",
       store: redisStore,
     })
@@ -58,10 +68,6 @@ const initApp = async () => {
   app.use(AuthRouter);
   app.use(UserRouter);
   app.use(ConversationRouter);
-
-  app.get("/api/isLoged", (req, res) => {
-    res.json(req.session?.user);
-  });
 
   app.use(errorHandler);
 

@@ -19,4 +19,8 @@ export class ApiError<T> extends Error {
   public static forbidden(data?: unknown) {
     return new ApiError(403, data ?? "action forbidden");
   }
+
+  public static badRequest(data?: unknown) {
+    return new ApiError(400, data ?? "bad request");
+  }
 }
