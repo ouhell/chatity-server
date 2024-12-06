@@ -3,18 +3,16 @@ if (process.env.ENV === "development") {
   dotenv.config();
 }
 import express from "express";
-import { createClient } from "redis";
 import RedisStore from "connect-redis";
 import path from "path";
-import bcrypt from "bcrypt";
+
 import logger from "./utils/logger";
 import cookieParser from "cookie-parser";
-import { z } from "zod";
 import cors from "cors";
 import prisma from "./database/databaseClient";
 import session from "express-session";
-import { applicationBootEnv } from "./env/environmentProvider";
-import { getRedisClient } from "./cache/redisconfig";
+import { applicationBootEnv } from "./utils/libs/env/environmentProvider";
+import { getRedisClient } from "./utils/libs/cache/redisconfig";
 import { AuthRouter } from "./routes/v1/AuthRouter";
 import { UserRouter } from "./routes/v1/UserRouter";
 import { errorHandler } from "./middleware/errorHandler";

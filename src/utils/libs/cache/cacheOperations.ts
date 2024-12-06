@@ -1,4 +1,4 @@
-import logger from "../utils/logger";
+import logger from "../../logger";
 import { getRedisClient } from "./redisconfig";
 
 export const getJsonCache = async (cacheKey: string) => {
