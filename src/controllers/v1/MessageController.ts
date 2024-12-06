@@ -1,5 +1,5 @@
 import { RequestHandler } from "express";
-import { errorCatch } from "../../utils/errorCatch";
+import { errorCatch } from "../../utils/libs/errors/errorCatch";
 import prisma from "../../database/databaseClient";
 
 // export const fetchMessages : RequestHandler = errorCatch( async (req , res ,next) => {

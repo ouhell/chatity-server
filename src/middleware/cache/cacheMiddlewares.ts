@@ -1,7 +1,6 @@
+import { extractCacheKey } from "@/utils/libs/cache/cacheKeys";
+import { getJsonCache } from "@/utils/libs/cache/cacheOperations";
 import { RequestHandler } from "express";
-import { extractCacheKey } from "../../cache/cacheKeys";
-import { getRedisClient } from "../../cache/redisconfig";
-import { getJsonCache } from "../../cache/cacheOperations";
 
 export const simpleCheckCache: () => RequestHandler =
   () => async (req, res, next) => {

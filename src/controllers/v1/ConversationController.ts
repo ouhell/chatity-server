@@ -1,9 +1,9 @@
 import { RequestHandler } from "express";
-import { errorCatch } from "../../utils/errorCatch";
+import { errorCatch } from "../../utils/libs/errors/errorCatch";
 import prisma from "../../database/databaseClient";
 import { Page } from "../../types/responses/wrapper";
 import { z } from "zod";
-import { ApiError } from "../../errors/ApiError";
+import { ApiError } from "../../utils/libs/errors/ApiError";
 const fetchConversationsQuery = z.object({
   cursor: z.string().optional(),
   pageSize: z.number().lt(200).gt(0).default(30),

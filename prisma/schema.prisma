@@ -69,11 +69,16 @@ model User {
   imageUrl  String?
   imageId   String? @db.Uuid
   role UserRole 
+  isEmailVerified Boolean 
   imageFile File?   @relation(fields: [imageId], references: [id])
   messages Message[]
   conversations ConversationUser[]
   blackListed UserBlackList[] @relation(name : "black_lister-user")
   blackListedBy UserBlackList[] @relation(name : "black_listed-user")
+  sentFriendRequests FriendRequest[] @relation(name: "friend_request_sender")
+  receivedFriendRequests FriendRequest[] @relation(name: "friend_request_receiver")
+  friendshipsA FriendShip[] @relation(name : "friend_user_A")
+  friendshipsB FriendShip[] @relation(name: "friend_user_B")
   oauthIdentifier String? @db.VarChar(255)
 }
 
@@ -105,7 +110,32 @@ model File {
   recordingMessages Message[]
   messageImages     MessageImage[]
   imageUsers        User[]
+  createdAt DateTime @db.Timestamp() @default(now())
 }
+
+
+model FriendRequest  {
+  id String @db.Uuid @id @default(uuid())
+  sender User @relation(fields: [senderId],references: [id],name: "friend_request_sender")
+  senderId String @db.Uuid 
+  receiver User @relation(fields: [receiverId],references: [id],name: "friend_request_receiver")
+  receiverId String @db.Uuid
+  createdAt DateTime @db.Timestamp() @default(now())
+}
+
+
+model FriendShip {
+  friendA  User @relation(fields: [friendAId], references: [id] , name: "friend_user_A")
+  friendAId String @db.Uuid
+  friendB User @relation(fields: [friendBId] ,references: [id], name: "friend_user_B")
+  friendBId String @db.Uuid
+  createdAt DateTime @db.Timestamp() @default(now())
+
+  @@id([friendAId,friendBId])
+}
+
+
+
 
 enum FileType {
   IMAGE

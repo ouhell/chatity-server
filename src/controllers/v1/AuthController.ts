@@ -1,11 +1,11 @@
 import { NextFunction, Request, RequestHandler } from "express";
-import { errorCatch } from "../../utils/errorCatch";
+import { errorCatch } from "../../utils/libs/errors/errorCatch";
 import { z } from "zod";
 import prisma from "../../database/databaseClient";
-import { ApiError } from "../../errors/ApiError";
+import { ApiError } from "../../utils/libs/errors/ApiError";
 import bcrypt from "bcrypt";
 import { User, UserRole } from "@prisma/client";
-import { applicationBootEnv } from "../../env/environmentProvider";
+import { applicationBootEnv } from "../../utils/libs/env/environmentProvider";
 import logger from "../../utils/logger";
 
 const getUserSession = async (req: Request) => {
@@ -34,7 +34,7 @@ const credentialLoginRequest = z.object({
   password: z.string().trim().min(0),
 });
 
-// * exportable
+// * @Handler
 const credentialLogin: RequestHandler = errorCatch(async (req, res, next) => {
   const loginRequest = credentialLoginRequest.parse(req.body);
   const user = await prisma.user.findFirst({
@@ -72,7 +72,7 @@ const credentialSignupRequest = z.object({
   password: z.string().trim().min(8),
 });
 
-// * exportable
+// * @Handler
 export const credentialSignUp: RequestHandler = errorCatch(
   async (req, res, next) => {
     const body = credentialSignupRequest.parse(req.body);
@@ -113,6 +113,7 @@ export const credentialSignUp: RequestHandler = errorCatch(
         email: body.email,
         password: hashedPassword,
         role: UserRole.BASIC,
+        isEmailVerified: false,
       },
     });
     const sessionUser = await authenticateUser(req, newUser);
@@ -186,7 +187,7 @@ const fetchUserGoogleInfo = async (req: Request, next: NextFunction) => {
   return userInfo;
 };
 
-// * exportable
+// * @Handler
 const googleOauthLogin: RequestHandler = errorCatch(async (req, res, next) => {
   logger.info("entered path");
   const userInfo = await fetchUserGoogleInfo(req, next);
@@ -231,6 +232,7 @@ const googleOauthLogin: RequestHandler = errorCatch(async (req, res, next) => {
       role: UserRole.BASIC,
       imageUrl: userInfo.picture,
       oauthIdentifier: userInfo.sub,
+      isEmailVerified: userInfo.email_verified,
     },
   });
 
@@ -240,13 +242,13 @@ const googleOauthLogin: RequestHandler = errorCatch(async (req, res, next) => {
   return;
 });
 
-// * export
+// * @Handler
 const fetchSession: RequestHandler = async (req, res, next) => {
   const userSession = await getUserSession(req);
   res.status(200).json(userSession);
 };
 
-// * export
+// * @Handler
 const deleteSession: RequestHandler = async (req, res, next) => {
   if (!req.session.user) {
     return next(ApiError.badRequest());
