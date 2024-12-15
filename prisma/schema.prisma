@@ -27,14 +27,11 @@ model Message {
 
 model Conversation {
   id String @id @db.Uuid @default(uuid())
-  name String? @db.VarChar(255)
   messages Message[] @relation(name: "message-convo")
   users ConversationUser[]
-  isPublic Boolean 
-  isDui Boolean
   createdAt DateTime @db.Timestamp() @default(now())
   updatedAt DateTime @db.Timestamp() @updatedAt 
-
+  friendShip FriendShip? @relation(name : "friendship_conversation")
 
 }
 
@@ -115,12 +112,13 @@ model File {
 
 
 model FriendRequest  {
-  id String @db.Uuid @id @default(uuid())
   sender User @relation(fields: [senderId],references: [id],name: "friend_request_sender")
   senderId String @db.Uuid 
   receiver User @relation(fields: [receiverId],references: [id],name: "friend_request_receiver")
   receiverId String @db.Uuid
   createdAt DateTime @db.Timestamp() @default(now())
+
+  @@id([senderId,receiverId])
 }
 
 
@@ -129,6 +127,8 @@ model FriendShip {
   friendAId String @db.Uuid
   friendB User @relation(fields: [friendBId] ,references: [id], name: "friend_user_B")
   friendBId String @db.Uuid
+  conversation Conversation @relation(fields: [conversationId], references: [id] , name: "friendship_conversation")
+  conversationId String @db.Uuid  @unique
   createdAt DateTime @db.Timestamp() @default(now())
 
   @@id([friendAId,friendBId])

@@ -17,6 +17,7 @@ import { AuthRouter } from "./routes/v1/AuthRouter";
 import { UserRouter } from "./routes/v1/UserRouter";
 import { errorHandler } from "./middleware/errorHandler";
 import { ConversationRouter } from "./routes/v1/ConservationRouter";
+import { FriendRequestRouter } from "./routes/v1/FriendRequestRouter";
 const app = express();
 
 const initApp = async () => {
@@ -66,7 +67,9 @@ const initApp = async () => {
   app.use(AuthRouter);
   app.use(UserRouter);
   app.use(ConversationRouter);
+  app.use(FriendRequestRouter);
 
+  // error handler
   app.use(errorHandler);
 
   const PORT = process.env.PORT ?? 4000;
