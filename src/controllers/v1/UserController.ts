@@ -16,6 +16,7 @@ const fetchUsers: RequestHandler = errorCatch(async (req, res, next) => {
 });
 
 // * exported
+// send a friend request to another user , if there is no friend request and is no blacklisted
 const postFriendRequest = errorCatch(async (req, res, next) => {
   const user = req.session.user!;
   const receiverId = req.params.receiverId;
@@ -72,53 +73,7 @@ const postFriendRequest = errorCatch(async (req, res, next) => {
   return res.status(201).json(newRequest);
 });
 
-// * exported
-const acceptFriendRequest = errorCatch(async (req, res, next) => {
-  const user = req.session.user!;
-  const senderId = req.params.senderId;
-  const request = await prisma.friendRequest.findFirst({
-    where: {
-      senderId: senderId,
-      receiverId: user.id,
-    },
-  });
-
-  if (!request) {
-    return next(ApiError.notFound("request does not exist"));
-  }
-
-  const friendShip = await prisma.friendShip.findFirst({
-    where: {
-      OR: [
-        { friendAId: user.id, friendBId: senderId },
-        {
-          friendAId: senderId,
-          friendBId: user.id,
-        },
-      ],
-    },
-  });
-
-  if (friendShip) {
-    await prisma.friendRequest.delete({
-      where: {
-        id: request.id,
-      },
-    });
-    return next(ApiError.forbidden("the users are already friends"));
-  }
-  const newFriendShip = await prisma.friendShip.create({
-    data: {
-      friendAId: senderId,
-      friendBId: user.id,
-    },
-  });
-
-  return res.status(201).json(newFriendShip);
-});
-
 export default {
   fetchUsers,
   postFriendRequest,
-  acceptFriendRequest,
 };

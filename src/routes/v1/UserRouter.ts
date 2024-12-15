@@ -21,3 +21,8 @@ UserRouter.get("/api/v1/users/:userId", async (req, res) => {
   res.json(user);
   return;
 });
+
+UserRouter.post(
+  "/api/v1/users/:receiverId/friend-request",
+  UserController.postFriendRequest
+);
