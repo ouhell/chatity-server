@@ -1,14 +1,29 @@
-import FriendRequestController from "@/controllers/v1/FriendRequestController";
+import FriendShipController from "@/controllers/v1/FriendShipController";
+import { isAuthenticated } from "@/middleware/authentication/authCheckMiddlewares";
 import express from "express";
 
-export const FriendRequestRouter = express.Router();
+export const FriendShipRouter = express.Router();
 
-FriendRequestRouter.patch(
-  "/api/v1/friend-request",
-  FriendRequestController.acceptRequest
+FriendShipRouter.get(
+  "/api/v1/friends",
+  isAuthenticated(),
+  FriendShipController.fetchFriends
 );
 
-FriendRequestRouter.delete(
-  "/api/v1/friend-request/:senderId/:receiverId",
-  FriendRequestController.deleteFriendRequest
+FriendShipRouter.get(
+  "/api/v1/friend-requests",
+  isAuthenticated(),
+  FriendShipController.fetchFriendRequests
+);
+
+FriendShipRouter.patch(
+  "/api/v1/friend-requests",
+  isAuthenticated(),
+  FriendShipController.acceptRequest
+);
+
+FriendShipRouter.delete(
+  "/api/v1/friend-requests/:senderId/:receiverId",
+  isAuthenticated(),
+  FriendShipController.deleteRequest
 );

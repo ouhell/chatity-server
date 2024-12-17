@@ -1,15 +1,32 @@
-import express, { RequestHandler } from "express";
+import express, { Request, RequestHandler } from "express";
 import prisma from "../../database/databaseClient";
 import { errorCatch } from "../../utils/libs/errors/errorCatch";
 import { z } from "zod";
 import { ApiError } from "../../utils/libs/errors/ApiError";
 import { extractCacheKey } from "../../utils/libs/cache/cacheKeys";
 import { setJsonCache } from "../../utils/libs/cache/cacheOperations";
+import { Prisma } from "@prisma/client/";
+
+const getFetchUsersFilterQuery = (req: Request) => {
+  const { username } = req.query;
+  const whereQuery: Prisma.UserWhereInput = {};
+  let appliedFilters = 0;
+  if (username && typeof username === "string" && username.trim()) {
+    whereQuery.username = {
+      contains: username,
+    };
+    appliedFilters++;
+  }
+
+  return appliedFilters ? whereQuery : undefined;
+};
 
 // * exported
 const fetchUsers: RequestHandler = errorCatch(async (req, res, next) => {
-  const users = await prisma.user.findMany();
-
+  const whereQuery = getFetchUsersFilterQuery(req);
+  const users = await prisma.user.findMany({
+    where: whereQuery,
+  });
   const cacheKey = extractCacheKey(req);
   setJsonCache(cacheKey, users);
   res.status(200).json(users);
