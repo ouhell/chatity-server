@@ -3,7 +3,8 @@ import { User, UserRole } from "@prisma/client";
 import { ApiError } from "../../utils/libs/errors/ApiError";
 
 export const isAuthenticated: (...roles: UserRole[]) => RequestHandler =
-  (roles) => (req, _res, next) => {
+  (...roles) =>
+  (req, _res, next) => {
     const user = req.session.user;
     if (!user) {
       return next(ApiError.unAuthorized("user not authenticated"));

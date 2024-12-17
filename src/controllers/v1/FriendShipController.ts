@@ -3,6 +3,58 @@ import { ApiError } from "@/utils/libs/errors/ApiError";
 import { errorCatch } from "@/utils/libs/errors/errorCatch";
 
 // * exportable
+const fetchFriends = errorCatch(async (req, res, next) => {
+  const user = req.session.user!;
+  const friends = await prisma.friendShip.findMany({
+    where: {
+      OR: [{ friendAId: user.id }, { friendBId: user.id }],
+    },
+    include: {
+      // conversation: true,
+      friendA: true,
+      friendB: true,
+    },
+  });
+
+  res.status(200).json(friends);
+});
+
+// * exportable
+const fetchFriendRequests = errorCatch(async (req, res, next) => {
+  const user = req.session.user!;
+
+  const requests = await prisma.friendRequest.findMany({
+    where: {
+      OR: [{ receiverId: user.id }, { senderId: user.id }],
+    },
+    include: {
+      sender: {
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          role: true,
+          isEmailVerified: true,
+          imageUrl: true,
+        },
+      },
+      receiver: {
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          role: true,
+          isEmailVerified: true,
+          imageUrl: true,
+        },
+      },
+    },
+  });
+
+  res.status(200).json(requests);
+});
+
+// * exportable
 const acceptRequest = errorCatch(async (req, res, next) => {
   const user = req.session.user!;
   const senderId = req.params.senderId;
@@ -121,5 +173,7 @@ const deleteRequest = errorCatch(async (req, res, next) => {
 
 export default {
   acceptRequest,
-  deleteFriendRequest: deleteRequest,
+  deleteRequest,
+  fetchFriendRequests,
+  fetchFriends,
 };

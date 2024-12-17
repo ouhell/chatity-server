@@ -5,7 +5,6 @@ if (process.env.ENV === "development") {
 import express from "express";
 import RedisStore from "connect-redis";
 import path from "path";
-
 import logger from "./utils/logger";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -17,7 +16,7 @@ import { AuthRouter } from "./routes/v1/AuthRouter";
 import { UserRouter } from "./routes/v1/UserRouter";
 import { errorHandler } from "./middleware/errorHandler";
 import { ConversationRouter } from "./routes/v1/ConservationRouter";
-import { FriendRequestRouter } from "./routes/v1/FriendRequestRouter";
+import { FriendShipRouter } from "./routes/v1/FriendRequestRouter";
 const app = express();
 
 const initApp = async () => {
@@ -67,7 +66,7 @@ const initApp = async () => {
   app.use(AuthRouter);
   app.use(UserRouter);
   app.use(ConversationRouter);
-  app.use(FriendRequestRouter);
+  app.use(FriendShipRouter);
 
   // error handler
   app.use(errorHandler);

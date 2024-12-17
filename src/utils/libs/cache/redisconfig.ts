@@ -1,3 +1,4 @@
+import logger from "@/utils/logger";
 import { RedisClientType } from "redis";
 import { createClient } from "redis";
 
@@ -16,7 +17,7 @@ export const getRedisClient = async () => {
       .on("error", (err) => console.log("Redis Client Error", err))
       .connect()
       .then((res) => {
-        console.log("connected to redis");
+        logger.info("REDIS CACH DB CONNECTED");
         return res;
       });
     redisConfig.client = client;
