@@ -58,9 +58,10 @@ const credentialLogin: RequestHandler = errorCatch(async (req, res, next) => {
     return next(ApiError.unAuthorized("incorrect password"));
   }
 
-  const sessionUser = await authenticateUser(req, user);
+  await authenticateUser(req, user);
+  const userSession = await getUserSession(req);
 
-  res.json(sessionUser);
+  res.json(userSession);
   return;
 });
 
@@ -116,8 +117,8 @@ export const credentialSignUp: RequestHandler = errorCatch(
         isEmailVerified: false,
       },
     });
-    const sessionUser = await authenticateUser(req, newUser);
-    res.status(201).json(sessionUser);
+    const userSession = await authenticateUser(req, newUser);
+    res.status(201).json(userSession);
     return;
   }
 );
@@ -198,10 +199,10 @@ const googleOauthLogin: RequestHandler = errorCatch(async (req, res, next) => {
   });
 
   if (sameEmailUser && sameEmailUser?.oauthIdentifier === userInfo.sub) {
-    const sessionUser = await authenticateUser(req, sameEmailUser);
-    logger.info("user exists " + sessionUser.username);
+    await authenticateUser(req, sameEmailUser);
+    const userSession = await getUserSession(req);
 
-    res.json(sessionUser);
+    res.json(userSession);
     return;
   }
 
@@ -237,8 +238,8 @@ const googleOauthLogin: RequestHandler = errorCatch(async (req, res, next) => {
   });
 
   await authenticateUser(req, newUser);
-  const sessionUser = await getUserSession(req);
-  res.status(200).json(sessionUser);
+  const userSession = await getUserSession(req);
+  res.status(200).json(userSession);
   return;
 });
 

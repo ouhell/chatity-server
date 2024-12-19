@@ -22,6 +22,12 @@ FriendShipRouter.patch(
   FriendShipController.acceptRequest
 );
 
+FriendShipRouter.get(
+  "/api/v1/friends-request/:first/:second",
+  isAuthenticated(),
+  FriendShipController.fetchFriendRequestById
+);
+
 FriendShipRouter.delete(
   "/api/v1/friend-requests/:senderId/:receiverId",
   isAuthenticated(),

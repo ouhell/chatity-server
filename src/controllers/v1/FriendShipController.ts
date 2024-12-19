@@ -55,6 +55,30 @@ const fetchFriendRequests = errorCatch(async (req, res, next) => {
 });
 
 // * exportable
+const fetchFriendRequestById = errorCatch(async (req, res, next) => {
+  const { first, second } = req.params;
+  const user = req.session.user!;
+  if (user.id !== first && user.id !== second) {
+    return next(ApiError.forbidden("can't access this ressource"));
+  }
+
+  const request = await prisma.friendRequest.findFirst({
+    where: {
+      OR: [
+        { senderId: first, receiverId: second },
+        { senderId: second, receiverId: first },
+      ],
+    },
+  });
+
+  if (!request) {
+    return next(ApiError.notFound("request not found"));
+  }
+
+  res.status(200).json(request);
+});
+
+// * exportable
 const acceptRequest = errorCatch(async (req, res, next) => {
   const user = req.session.user!;
   const senderId = req.params.senderId;
@@ -176,4 +200,5 @@ export default {
   deleteRequest,
   fetchFriendRequests,
   fetchFriends,
+  fetchFriendRequestById,
 };
