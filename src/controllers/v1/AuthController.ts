@@ -236,8 +236,8 @@ const googleOauthLogin: RequestHandler = errorCatch(async (req, res, next) => {
     },
   });
 
-  const sessionUser = await authenticateUser(req, newUser);
-  logger.info("user logged", sessionUser.username);
+  await authenticateUser(req, newUser);
+  const sessionUser = await getUserSession(req);
   res.status(200).json(sessionUser);
   return;
 });
