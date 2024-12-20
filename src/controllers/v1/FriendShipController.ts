@@ -1,6 +1,9 @@
 import prisma from "@/database/databaseClient";
 import { ApiError } from "@/utils/libs/errors/ApiError";
 import { errorCatch } from "@/utils/libs/errors/errorCatch";
+import { Prisma } from "@prisma/client";
+import { DefaultArgs } from "@prisma/client/runtime/library";
+import { userSelectArgs } from "./args/selectArgs";
 
 // * exportable
 const fetchFriends = errorCatch(async (req, res, next) => {
@@ -28,26 +31,8 @@ const fetchFriendRequests = errorCatch(async (req, res, next) => {
       OR: [{ receiverId: user.id }, { senderId: user.id }],
     },
     include: {
-      sender: {
-        select: {
-          id: true,
-          username: true,
-          email: true,
-          role: true,
-          isEmailVerified: true,
-          imageUrl: true,
-        },
-      },
-      receiver: {
-        select: {
-          id: true,
-          username: true,
-          email: true,
-          role: true,
-          isEmailVerified: true,
-          imageUrl: true,
-        },
-      },
+      sender: userSelectArgs,
+      receiver: userSelectArgs,
     },
   });
 
@@ -69,6 +54,10 @@ const fetchFriendRequestById = errorCatch(async (req, res, next) => {
         { senderId: second, receiverId: first },
       ],
     },
+    include: {
+      receiver: userSelectArgs,
+      sender: userSelectArgs,
+    },
   });
 
   if (!request) {
@@ -76,6 +65,47 @@ const fetchFriendRequestById = errorCatch(async (req, res, next) => {
   }
 
   res.status(200).json(request);
+});
+
+// * exported
+const postFriendRequest = errorCatch(async (req, res, next) => {
+  const user = req.session.user!;
+  const receiverId = req.params.receiverId;
+  const receiver = await prisma.user.findFirst({
+    where: { id: receiverId },
+    include: { blackListed: true },
+  });
+  const blackListed = receiver?.blackListed.find((b) => {
+    b.blackListedId === user.id;
+  });
+  if (!!blackListed) {
+    return next(ApiError.forbidden("user is blacklisted"));
+  }
+  const request = await prisma.friendRequest.findFirst({
+    where: {
+      OR: [
+        { senderId: user.id, receiverId: receiverId },
+        { senderId: receiverId, receiverId: user.id },
+      ],
+    },
+  });
+
+  if (request) {
+    return next(ApiError.forbidden("request already exists"));
+  }
+
+  const newRequest = await prisma.friendRequest.create({
+    data: {
+      senderId: user.id,
+      receiverId: receiverId,
+    },
+    include: {
+      receiver: userSelectArgs,
+      sender: userSelectArgs,
+    },
+  });
+
+  return res.status(201).json(newRequest);
 });
 
 // * exportable
@@ -97,10 +127,6 @@ const acceptRequest = errorCatch(async (req, res, next) => {
       senderId: senderId,
       receiverId: receiverId,
     },
-    // include: {
-    //   sender: { select: { id: true } },
-    //   receiver: { select: { id: true } },
-    // },
   });
 
   if (!request) {
@@ -196,6 +222,7 @@ const deleteRequest = errorCatch(async (req, res, next) => {
 });
 
 export default {
+  postFriendRequest,
   acceptRequest,
   deleteRequest,
   fetchFriendRequests,

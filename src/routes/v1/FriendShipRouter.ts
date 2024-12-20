@@ -4,6 +4,10 @@ import express from "express";
 
 export const FriendShipRouter = express.Router();
 
+FriendShipRouter.param("receiverId", (req, res, next, val) => {
+  return next();
+});
+
 FriendShipRouter.get(
   "/api/v1/friends",
   isAuthenticated(),
@@ -16,16 +20,22 @@ FriendShipRouter.get(
   FriendShipController.fetchFriendRequests
 );
 
-FriendShipRouter.patch(
-  "/api/v1/friend-requests",
-  isAuthenticated(),
-  FriendShipController.acceptRequest
-);
-
 FriendShipRouter.get(
   "/api/v1/friends-request/:first/:second",
   isAuthenticated(),
   FriendShipController.fetchFriendRequestById
+);
+
+FriendShipRouter.post(
+  "/api/v1/friend-requests/:receiverId",
+  isAuthenticated(),
+  FriendShipController.postFriendRequest
+);
+
+FriendShipRouter.patch(
+  "/api/v1/friend-requests",
+  isAuthenticated(),
+  FriendShipController.acceptRequest
 );
 
 FriendShipRouter.delete(
