@@ -16,7 +16,7 @@ import { AuthRouter } from "./routes/v1/AuthRouter";
 import { UserRouter } from "./routes/v1/UserRouter";
 import { errorHandler } from "./middleware/errorHandler";
 import { ConversationRouter } from "./routes/v1/ConservationRouter";
-import { FriendShipRouter } from "./routes/v1/FriendRequestRouter";
+import { FriendShipRouter } from "./routes/v1/FriendShipRouter";
 const app = express();
 
 const initApp = async () => {
