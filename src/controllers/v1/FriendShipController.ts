@@ -100,24 +100,8 @@ const postFriendRequest = errorCatch(async (req, res, next) => {
       receiverId: receiverId,
     },
     include: {
-      receiver: {
-        select: {
-          username: true,
-          imageUrl: true,
-          role: true,
-          email: true,
-          id: true,
-        },
-      },
-      sender: {
-        select: {
-          username: true,
-          imageUrl: true,
-          role: true,
-          email: true,
-          id: true,
-        },
-      },
+      receiver: userSelectArgs,
+      sender: userSelectArgs,
     },
   });
 
@@ -143,10 +127,6 @@ const acceptRequest = errorCatch(async (req, res, next) => {
       senderId: senderId,
       receiverId: receiverId,
     },
-    // include: {
-    //   sender: { select: { id: true } },
-    //   receiver: { select: { id: true } },
-    // },
   });
 
   if (!request) {
