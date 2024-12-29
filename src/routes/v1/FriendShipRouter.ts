@@ -32,8 +32,8 @@ FriendShipRouter.post(
   FriendShipController.postFriendRequest
 );
 
-FriendShipRouter.patch(
-  "/api/v1/friend-requests",
+FriendShipRouter.put(
+  "/api/v1/friend-requests/:senderId/:receiverId",
   isAuthenticated(),
   FriendShipController.acceptRequest
 );

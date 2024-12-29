@@ -114,6 +114,12 @@ const acceptRequest = errorCatch(async (req, res, next) => {
   const senderId = req.params.senderId;
   const receiverId = req.params.receiverId;
 
+  console.log("data", {
+    senderId,
+    receiverId,
+    userId: user.id,
+  });
+
   if (receiverId !== user.id) {
     return next(
       ApiError.forbidden(
@@ -176,6 +182,10 @@ const acceptRequest = errorCatch(async (req, res, next) => {
         friendBId: user.id,
         conversationId: newConversation.id,
       },
+      include: {
+        friendA: userSelectArgs,
+        friendB: userSelectArgs,
+      },
     });
 
     await prisma.friendRequest.delete({
@@ -195,7 +205,7 @@ const deleteRequest = errorCatch(async (req, res, next) => {
   const senderId = req.params.senderId;
   const receiverId = req.params.receiverId;
 
-  if (user.id !== receiverId || user.id !== senderId) {
+  if (user.id !== receiverId && user.id !== senderId) {
     return next(ApiError.forbidden("user is not related to the request"));
   }
   const request = await prisma.friendRequest.findFirst({
