@@ -21,6 +21,7 @@ export const errorHandler = (
   next: NextFunction
 ) => {
   if (err instanceof ApiError) {
+    console.log("error", err.data);
     const respData = getApiResponse(err, req, res);
     res.status(err.status).json(respData ?? "error");
     return;
