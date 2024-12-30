@@ -4,7 +4,9 @@ type valueType = "string" | "number" | "stringArray" | "numberArray";
 
 export const getParamStr = (param: any) => {
   if (typeof param !== "string") return undefined;
-  return param;
+  const value = param.trim();
+  if (!value) return;
+  return value;
 };
 
 export const getParamNum = (param: any) => {

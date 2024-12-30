@@ -1,17 +1,48 @@
 import prisma from "@/database/databaseClient";
 import { ApiError } from "@/utils/libs/errors/ApiError";
 import { errorCatch } from "@/utils/libs/errors/errorCatch";
-import { Prisma } from "@prisma/client";
+import { FriendShip, Prisma } from "@prisma/client";
 import { DefaultArgs } from "@prisma/client/runtime/library";
 import { userSelectArgs } from "./args/selectArgs";
+import { Request } from "express";
+import { getParamStr } from "@/utils/libs/params/paramsOperations";
+
+const getfetchFriendsFilter = (req: Request) => {
+  const user = req.session.user!;
+  const query = req.query;
+  const username = getParamStr(query.username);
+
+  const whereQuery: Prisma.FriendShipWhereInput = {
+    OR: [{ friendAId: user.id }, { friendBId: user.id }],
+  };
+
+  if (username) {
+    const usernameWhereQuery: Prisma.FriendShipWhereInput = {
+      AND: [
+        {
+          OR: [
+            { friendA: { id: user.id } },
+            { friendA: { username: { contains: username } } },
+          ],
+        },
+        {
+          OR: [
+            { friendB: { id: user.id } },
+            { friendB: { username: { contains: username } } },
+          ],
+        },
+      ],
+    };
+    whereQuery.AND = [usernameWhereQuery];
+  }
+  return whereQuery;
+};
 
 // * exportable
 const fetchFriends = errorCatch(async (req, res, next) => {
-  const user = req.session.user!;
+  const whereQuery = getfetchFriendsFilter(req);
   const friends = await prisma.friendShip.findMany({
-    where: {
-      OR: [{ friendAId: user.id }, { friendBId: user.id }],
-    },
+    where: whereQuery,
     include: {
       // conversation: true,
       friendA: true,
