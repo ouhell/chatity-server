@@ -2,17 +2,17 @@ import { Request } from "express";
 
 type valueType = "string" | "number" | "stringArray" | "numberArray";
 
-export const getParamStr = (param: any) => {
+export const getParamStr = (param: any, def?: string) => {
   if (typeof param !== "string") return undefined;
   const value = param.trim();
-  if (!value) return;
+  if (!value) return def;
   return value;
 };
 
-export const getParamNum = (param: any) => {
+export const getParamNum = (param: any, def?: number) => {
   if (typeof param !== "string") return;
   const num = Number.parseInt(param);
-  if (Number.isNaN(num)) return;
+  if (Number.isNaN(num)) return def;
 
   return num;
 };
@@ -45,4 +45,9 @@ export const getParamNumArray = (param: any) => {
   }
 
   return arr;
+};
+
+export const getParamBool = (param: any) => {
+  const str = getParamStr(param);
+  return str && str === "true";
 };

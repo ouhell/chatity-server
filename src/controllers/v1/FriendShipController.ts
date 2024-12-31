@@ -196,16 +196,7 @@ const acceptRequest = errorCatch(async (req, res, next) => {
 
   const newFriendShip = await prisma.$transaction(async () => {
     const newConversation = await prisma.conversation.create({
-      data: {
-        users: {
-          createMany: {
-            data: [
-              { role: "ADMIN", userId: senderId, isBlocked: false },
-              { role: "ADMIN", userId: receiverId, isBlocked: false },
-            ],
-          },
-        },
-      },
+      data: {},
     });
     const newFriendShip = await prisma.friendShip.create({
       data: {
