@@ -56,8 +56,7 @@ export const fetchMessages: RequestHandler = errorCatch(
     const user = req.session.user!;
     const query = req.query;
     const cursorId = getParamStr(query.cursorId);
-    const conversationId =
-      getParamStr(query.conversationId) ?? req.params.conversationId;
+    const conversationId = req.params.conversationId;
 
     if (conversationId) {
       return next(ApiError.badRequest("no conversation id provided"));
@@ -96,6 +95,7 @@ const checkPrivateMessagePostAccess = async (
   friendshipId: FriendShipId
 ) => {
   const user = req.session.user!;
+  const conversationId = req.params.conversationId;
   const friendship = await prisma.friendShip.findFirst({
     where: {
       friendAId: friendshipId.friendAId,
@@ -104,6 +104,10 @@ const checkPrivateMessagePostAccess = async (
   });
 
   if (!friendship) return false;
+
+  const isFriendShipConvo = friendship.conversationId === conversationId;
+
+  if (!isFriendShipConvo) return false;
 
   const isFriend =
     friendship.friendAId === user.id || friendship.friendBId === user.id;
@@ -162,3 +166,5 @@ export const postMessage = errorCatch(async (req, res, next) => {
 
   res.status(201).json(newMessage);
 });
+
+export default { postMessage, fetchMessages };
