@@ -5,10 +5,12 @@ import { getParamStr } from "../../utils/libs/params/paramsOperations";
 import { ApiError } from "@/utils/libs/errors/ApiError";
 import { z } from "zod";
 
-type FriendShipId = {
-  friendAId: string;
-  friendBId: string;
-};
+const FriendshipIdTemplate = z.object({
+  friendAId: z.string().trim().min(1),
+  friendBId: z.string().trim().min(1),
+});
+
+type FriendShipId = z.infer<typeof FriendshipIdTemplate>;
 
 const checkPrivateMessagesGetAccess = async (
   req: Request,
@@ -22,33 +24,33 @@ const checkPrivateMessagesGetAccess = async (
     },
   });
 
-  if (!friendship) return false;
+  if (!friendship) return "friendship cannot be found";
 
   const isFriend =
     friendship.friendAId === user.id || friendship.friendBId === user.id;
 
-  if (!isFriend) return false;
+  if (!isFriend) return "user is not a part of the friendship";
 
   const isBlocked =
     (friendship.blockedFriendA && user.id === friendship.friendAId) ||
     (friendship.blockedFriendB && user.id === friendship.friendBId);
 
-  if (isBlocked) return false;
+  if (isBlocked) return "user is blocked";
 
   return true;
 };
 
 const checkMessagesGetAccess = async (req: Request) => {
-  const query = req.query;
-  const friendAId = getParamStr(query.friendAId);
-  const friendBId = getParamStr(query.friendBId);
-  const friendShipId: FriendShipId | undefined =
-    friendAId && friendBId ? { friendAId, friendBId } : undefined;
+  const friendshipParam = req.query.friendshipId;
+  console.log("fr id", friendshipParam);
+  const friendshipId = friendshipParam
+    ? FriendshipIdTemplate.parse(friendshipParam)
+    : undefined;
 
-  if (friendShipId) {
-    return await checkPrivateMessagesGetAccess(req, friendShipId);
+  if (friendshipId) {
+    return await checkPrivateMessagesGetAccess(req, friendshipId);
   }
-  return false;
+  return "no further access modifier provided";
 };
 
 export const fetchMessages: RequestHandler = errorCatch(
@@ -58,17 +60,13 @@ export const fetchMessages: RequestHandler = errorCatch(
     const cursorId = getParamStr(query.cursorId);
     const conversationId = req.params.conversationId;
 
-    if (conversationId) {
+    if (!conversationId) {
       return next(ApiError.badRequest("no conversation id provided"));
     }
 
-    const allowedAccess = await checkMessagesGetAccess(req);
-    if (!allowedAccess) {
-      return next(
-        ApiError.forbidden(
-          "user is not allowed access to the messages of this conversation"
-        )
-      );
+    const accessError = await checkMessagesGetAccess(req);
+    if (accessError !== true) {
+      return next(ApiError.forbidden(accessError));
     }
 
     const messages = await prisma.message.findMany({
