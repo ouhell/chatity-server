@@ -42,7 +42,7 @@ const checkPrivateMessagesGetAccess = async (
 
 const checkMessagesGetAccess = async (req: Request) => {
   const friendshipParam = req.query.friendshipId;
-  console.log("fr id", friendshipParam);
+
   const friendshipId = friendshipParam
     ? FriendshipIdTemplate.parse(friendshipParam)
     : undefined;
@@ -101,38 +101,40 @@ const checkPrivateMessagePostAccess = async (
     },
   });
 
-  if (!friendship) return false;
+  if (!friendship) return "friendship can not be found";
 
   const isFriendShipConvo = friendship.conversationId === conversationId;
 
-  if (!isFriendShipConvo) return false;
+  if (!isFriendShipConvo)
+    return "the conversationId does not belong to the friendship";
 
   const isFriend =
     friendship.friendAId === user.id || friendship.friendBId === user.id;
 
-  if (!isFriend) return false;
+  if (!isFriend) return "user is not a friend";
 
   const isBlocked =
     (friendship.blockedFriendA && user.id === friendship.friendAId) ||
     (friendship.blockedFriendB && user.id === friendship.friendBId);
 
-  if (isBlocked) return false;
+  if (isBlocked) return "use is blocked";
 
   return true;
 };
 
 const checkMessagePostAccess = async (req: Request) => {
   const query = req.query;
-  const friendAId = getParamStr(query.friendAId);
-  const friendBId = getParamStr(query.friendBId);
-  const friendShipId: FriendShipId | undefined =
-    friendAId && friendBId ? { friendAId, friendBId } : undefined;
+  const friendshipParam = query.friendshipId;
 
-  if (friendShipId) {
-    return await checkPrivateMessagePostAccess(req, friendShipId);
+  const friendshipId = friendshipParam
+    ? FriendshipIdTemplate.parse(friendshipParam)
+    : undefined;
+
+  if (friendshipId) {
+    return await checkPrivateMessagePostAccess(req, friendshipId);
   }
 
-  return false;
+  return "no further access modifier provided";
 };
 
 const postMessageBodyTemplate = z.object({
@@ -146,12 +148,10 @@ export const postMessage = errorCatch(async (req, res, next) => {
 
   const body = postMessageBodyTemplate.parse(req.body);
 
-  const allowedAccess = checkMessagePostAccess(req);
+  const allowedAccess = await checkMessagePostAccess(req);
 
-  if (!allowedAccess) {
-    return next(
-      ApiError.forbidden("user not allowed access to message creation")
-    );
+  if (allowedAccess !== true) {
+    return next(ApiError.forbidden(allowedAccess));
   }
 
   const newMessage = await prisma.message.create({
