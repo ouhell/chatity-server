@@ -1,10 +1,11 @@
-import { Server, WebSocketServer, WebSocket } from "ws";
-import { z } from "zod";
-
-type UnauthenticatedSocket = {
-  entredAt: number;
-  ws: WebSocket;
-};
+import {
+  AuthenticatedSocket,
+  SocketMessage,
+  socketMessageTemplate,
+  UnauthenticatedSocket,
+} from "@/types/sockets/socketTypes";
+import { Server, WebSocket } from "ws";
+import { conversationRooms } from "./rooms/conversationRooms";
 
 let unAuthenticatedSockets: UnauthenticatedSocket[] = [];
 
@@ -21,26 +22,7 @@ setInterval(() => {
   );
 }, 5000);
 
-type AuthenticatedSocket = {
-  user: {
-    name: string;
-  };
-  ws: WebSocket;
-};
-
 const authenticatedSockets = new Map<WebSocket, AuthenticatedSocket>();
-const conversationRooms = new Map<
-  string,
-  Map<WebSocket, AuthenticatedSocket>
->();
-
-const socketMessageTemplate = z.object({
-  key: z.string(),
-  content: z.any(),
-  sentAt: z.number(),
-});
-
-type SocketMessage = z.infer<typeof socketMessageTemplate>;
 
 const websocketServer = new Server({
   port: 8080,
@@ -68,19 +50,6 @@ websocketServer.on("connection", async (ws) => {
 
 async function socketMessagesRouting(ws: WebSocket, message: SocketMessage) {
   switch (message.key) {
-    case "authenticate":
-      const name = message.content as string;
-      const authenticated = authenticatedSockets.has(ws);
-      if (authenticated) return;
-
-      unAuthenticatedSockets = unAuthenticatedSockets.filter(
-        (s) => s.ws !== ws
-      );
-      authenticatedSockets.set(ws, {
-        user: { name },
-        ws,
-      });
-      break;
     case "join-conversation":
       const conversationId = message.content as string;
 
@@ -91,5 +60,8 @@ async function socketMessagesRouting(ws: WebSocket, message: SocketMessage) {
       if (!authWs) return;
       convRoom.set(ws, authWs);
       break;
+
+    case "send-message":
+      const msg = message.content;
   }
 }
