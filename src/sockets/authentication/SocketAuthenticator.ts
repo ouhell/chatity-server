@@ -11,6 +11,14 @@ export class SocketAuthenticator {
   private static unauthenticatedSockets: Map<WebSocket, UnauthenticatedSocket> =
     new Map();
 
+  public static getAllAuthenticatedSockets() {
+    return this.authenticatedSockets.values();
+  }
+
+  public static getAllunauthenticatedSockets() {
+    return this.unauthenticatedSockets.values();
+  }
+
   public static getAuthenticatedSocket(ws: WebSocket) {
     return this.authenticatedSockets.get(ws);
   }
@@ -27,9 +35,9 @@ export class SocketAuthenticator {
   }
 
   public static authenticateSocket(ws: WebSocket, username: string) {
-    if (this.authenticatedSockets.has(ws)) return;
+    if (this.authenticatedSockets.has(ws)) return false;
 
-    if (!this.unauthenticatedSockets.has(ws)) return;
+    if (!this.unauthenticatedSockets.has(ws)) return false;
     this.removeUnauthenticatedSocket(ws);
     this.authenticatedSockets.set(ws, {
       user: {
@@ -38,6 +46,8 @@ export class SocketAuthenticator {
       ws: ws,
       conversationRooms: [],
     });
+
+    return true;
   }
   public static getUnauthenticatedSocket(ws: WebSocket) {
     return this.unauthenticatedSockets.get(ws);
@@ -60,3 +70,17 @@ export class SocketAuthenticator {
     });
   }
 }
+
+setInterval(() => {
+  const now = Date.now();
+  const fiveMinutes = 1000 * 60 * 5;
+  const unauthenticatedSockets =
+    SocketAuthenticator.getAllunauthenticatedSockets();
+
+  for (let socket of unauthenticatedSockets) {
+    if (now - socket.entredAt >= fiveMinutes) {
+      socket.ws.close();
+      SocketAuthenticator.removeUnauthenticatedSocket(socket.ws);
+    }
+  }
+}, 5000);
