@@ -5,7 +5,7 @@ import {
   UnauthenticatedSocket,
 } from "@/types/sockets/socketTypes";
 import { Server, WebSocket } from "ws";
-import { ConversationHub } from "./rooms/conversationHub";
+import { ConversationHub } from "./rooms/ConversationHub";
 
 let unAuthenticatedSockets: UnauthenticatedSocket[] = [];
 
