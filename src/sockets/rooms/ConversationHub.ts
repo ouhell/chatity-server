@@ -5,6 +5,15 @@ export class ConversationHub {
   private static rooms: Map<string, Map<WebSocket, AuthenticatedSocket>> =
     new Map();
 
+  public static getConvoRoom(conversationId: string) {
+    const values = this.getConvoSockets(conversationId);
+    return this.rooms.get(conversationId);
+  }
+
+  public static getConvoSockets(conversationId: string) {
+    return this.rooms.get(conversationId)?.values();
+  }
+
   public static joinConvoRoom(conversationId: string, as: AuthenticatedSocket) {
     const conversationRoom = this.rooms.get(conversationId);
     if (!conversationRoom) return;
