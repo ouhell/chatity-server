@@ -78,9 +78,33 @@ export const fetchMessages: RequestHandler = errorCatch(
       orderBy: {
         createdAt: "desc",
       },
+
       include: {
-        images: true,
-        recording: true,
+        images: {
+          select: {
+            messageId: true,
+            imageId: true,
+            image: {
+              select: {
+                url: true,
+                createdAt: true,
+                type: true,
+                name: true,
+                id: true,
+              },
+            },
+          },
+        },
+        recording: {
+          select: {
+            id: true,
+            createdAt: true,
+            extension: true,
+            name: true,
+            url: true,
+            type: true,
+          },
+        },
       },
     });
 
