@@ -5,7 +5,7 @@ import {
   UnauthenticatedSocket,
 } from "@/types/sockets/socketTypes";
 import { Server, WebSocket } from "ws";
-import { conversationRooms } from "./rooms/conversationRooms";
+import { ConversationHub } from "./rooms/conversationHub";
 
 let unAuthenticatedSockets: UnauthenticatedSocket[] = [];
 
@@ -29,6 +29,10 @@ const websocketServer = new Server({
 });
 
 websocketServer.on("connection", async (ws) => {
+  unAuthenticatedSockets.push({
+    entredAt: Date.now(),
+    ws: ws,
+  });
   ws.on("message", (data) => {
     const message = socketMessageTemplate.parse(data);
     const name = message.content as string;
@@ -40,6 +44,7 @@ websocketServer.on("connection", async (ws) => {
     authenticatedSockets.set(ws, {
       user: { name },
       ws,
+      conversationRooms: [],
     });
     ws.on("message", async (data) => {
       const message = socketMessageTemplate.parse(data);
@@ -49,16 +54,14 @@ websocketServer.on("connection", async (ws) => {
 });
 
 async function socketMessagesRouting(ws: WebSocket, message: SocketMessage) {
+  if (ws.readyState !== WebSocket.OPEN) return;
+  const authWS = authenticatedSockets.get(ws);
+  if (!authWS) return;
   switch (message.key) {
     case "join-conversation":
       const conversationId = message.content as string;
 
-      const convRoom = conversationRooms.get(conversationId);
-      if (!convRoom) return;
-      if (convRoom.has(ws)) return;
-      const authWs = authenticatedSockets.get(ws);
-      if (!authWs) return;
-      convRoom.set(ws, authWs);
+      ConversationHub.joinConvoRoom(conversationId, authWS);
       break;
 
     case "send-message":

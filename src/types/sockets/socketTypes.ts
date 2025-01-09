@@ -10,6 +10,7 @@ export type AuthenticatedSocket = {
     name: string;
   };
   ws: WebSocket;
+  conversationRooms: string[];
 };
 
 export const socketMessageTemplate = z.object({
