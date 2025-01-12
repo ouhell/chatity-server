@@ -73,12 +73,12 @@ export class SocketAuthenticator {
 
 setInterval(() => {
   const now = Date.now();
-  const fiveMinutes = 1000 * 60 * 5;
+  const tenSeconds = 1000 * 10;
   const unauthenticatedSockets =
     SocketAuthenticator.getAllunauthenticatedSockets();
 
   for (let socket of unauthenticatedSockets) {
-    if (now - socket.entredAt >= fiveMinutes) {
+    if (now - socket.entredAt >= tenSeconds) {
       socket.ws.close();
       SocketAuthenticator.removeUnauthenticatedSocket(socket.ws);
     }
