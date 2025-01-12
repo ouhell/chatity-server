@@ -17,6 +17,7 @@ import { UserRouter } from "./routes/v1/UserRouter";
 import { errorHandler } from "./middleware/errorHandler";
 import { ConversationRouter } from "./routes/v1/ConservationRouter";
 import { FriendShipRouter } from "./routes/v1/FriendShipRouter";
+import { startSocketServer } from "./sockets/socket";
 const app = express();
 
 const initApp = async () => {
@@ -80,6 +81,8 @@ const initApp = async () => {
   app.listen(PORT, () => {
     logger.info(`SERVER STARTED AT ${HOST}:${PORT}`);
   });
+
+  startSocketServer();
 };
 
 initApp();

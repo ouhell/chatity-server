@@ -7,43 +7,54 @@ import {
 import { Server, WebSocket } from "ws";
 import { ConversationHub } from "./rooms/ConversationHub";
 import { SocketAuthenticator } from "./authentication/SocketAuthenticator";
+import logger from "@/utils/logger";
+const parseSocketMessage = (message: any) => {
+  if (typeof message !== "string") {
+    console.log("typeof message", message);
+    throw new Error("message is not json string");
+  }
 
-let unAuthenticatedSockets: UnauthenticatedSocket[] = [];
+  const object = JSON.parse(message);
 
-const websocketServer = new Server({
-  port: 8080,
-});
+  return socketMessageTemplate.parse(object);
+};
 
-websocketServer.on("connection", async (ws) => {
-  unAuthenticatedSockets.push({
-    entredAt: Date.now(),
-    ws: ws,
+export const startSocketServer = () => {
+  logger.info("STARTED SOCKET SERVER :::::::");
+  const websocketServer = new Server({
+    port: 8080,
   });
-  ws.on("message", (data) => {
-    const message = socketMessageTemplate.parse(data);
-    const name = message.content as string;
 
-    const isAuthenticated = SocketAuthenticator.authenticateSocket(ws, name);
-    if (!isAuthenticated) return;
-    ws.on("message", async (data) => {
-      const message = socketMessageTemplate.parse(data);
-      socketMessagesRouting(ws, message);
+  websocketServer.on("connection", async (ws) => {
+    console.log("socket connected");
+    SocketAuthenticator.registerUnauthenticatedSocket(ws);
+
+    ws.on("message", (data) => {
+      const message = parseSocketMessage(data.toString());
+      const name = message.content as string;
+
+      const isAuthenticated = SocketAuthenticator.authenticateSocket(ws, name);
+      if (!isAuthenticated) return;
+      ws.on("message", async (data) => {
+        const message = socketMessageTemplate.parse(data);
+        socketMessagesRouting(ws, message);
+      });
     });
   });
-});
 
-async function socketMessagesRouting(ws: WebSocket, message: SocketMessage) {
-  if (ws.readyState !== WebSocket.OPEN) return;
-  const authWS = SocketAuthenticator.getAuthenticatedSocket(ws);
-  if (!authWS) return;
-  switch (message.key) {
-    case "join-conversation":
-      const conversationId = message.content as string;
+  async function socketMessagesRouting(ws: WebSocket, message: SocketMessage) {
+    if (ws.readyState !== WebSocket.OPEN) return;
+    const authWS = SocketAuthenticator.getAuthenticatedSocket(ws);
+    if (!authWS) return;
+    switch (message.key) {
+      case "join-conversation":
+        const conversationId = message.content as string;
 
-      ConversationHub.joinConvoRoom(conversationId, authWS);
-      break;
+        ConversationHub.joinConvoRoom(conversationId, authWS);
+        break;
 
-    case "send-message":
-      const msg = message.content;
+      case "send-message":
+        const msg = message.content;
+    }
   }
-}
+};
