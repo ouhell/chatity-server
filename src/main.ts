@@ -18,9 +18,12 @@ import { errorHandler } from "./middleware/errorHandler";
 import { ConversationRouter } from "./routes/v1/ConservationRouter";
 import { FriendShipRouter } from "./routes/v1/FriendShipRouter";
 import { startSocketServer } from "./sockets/socket";
+import multer from "multer";
+
 const app = express();
 
 const initApp = async () => {
+  // setup morgan logging
   if (process.env.NODE_ENV === "development") {
     const morgan = (await import("morgan")).default;
 
@@ -28,13 +31,8 @@ const initApp = async () => {
     logger.info("ENGAGED MORGAN");
   }
 
-  console.log();
-  const redisClient = await getRedisClient();
+  // various setups
 
-  let redisStore = new RedisStore({
-    client: redisClient,
-    prefix: "next-chat-store:",
-  });
   app.disable("etag");
   app.use(
     cors({
@@ -46,6 +44,18 @@ const initApp = async () => {
   app.use(express.static(path.join(__dirname, "..", "public")));
   app.use(express.json());
   app.use(cookieParser());
+
+  // session setup
+
+  // setup redis caching db
+
+  const redisClient = await getRedisClient();
+
+  let redisStore = new RedisStore({
+    client: redisClient,
+    prefix: "next-chat-store:",
+  });
+
   app.use(
     session({
       secret: applicationBootEnv.SESSION_SECRET,

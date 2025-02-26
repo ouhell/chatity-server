@@ -172,6 +172,11 @@ export const postMessage = errorCatch(async (req, res, next) => {
 
   const body = postMessageBodyTemplate.parse(req.body);
 
+  const record = req.file;
+  if (record) {
+    console.log("audio file uploaded", record.filename);
+  }
+
   const allowedAccess = await checkMessagePostAccess(req);
 
   if (allowedAccess !== true) {
