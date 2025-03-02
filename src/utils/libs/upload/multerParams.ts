@@ -3,7 +3,9 @@ import fs from "fs";
 import path from "path";
 import logger from "@/utils/logger";
 
-const destination = "/storage";
+const destination = path.join(__dirname, "..", "..", "..", "..", "storage");
+
+console.log("destination for upload is ::: ", destination);
 
 const twoHoursInMs = 1000 * 60 * 60 * 2; // 2 hours ago in ms
 
