@@ -9,9 +9,10 @@ type ImageMetaData = {
   size: number;
   name: string;
   format: string;
+  key?: string;
 };
 
-type ImageData = {
+export type ImageData = {
   downSizedImage?: Buffer;
   blurHash?: string;
   originalImage: Buffer;
