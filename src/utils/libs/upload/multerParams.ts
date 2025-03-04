@@ -3,9 +3,11 @@ import fs from "fs";
 import path from "path";
 import logger from "@/utils/logger";
 
-const destination = "/storage";
+const destination = path.join(__dirname, "..", "..", "..", "..", "storage");
 
-const twoHoursInMs = 1000 * 60 * 60 * 2; // 2 hours ago in ms
+console.log("destination for upload is ::: ", destination);
+
+const timeoutVal = 1000 * 60 * 2; // 2 mins ago in ms
 
 export const multerStorage: multer.StorageEngine = multer.diskStorage({
   destination: destination,
@@ -26,7 +28,7 @@ const storageClear = async () => {
 
     const difference = now - creationTime;
 
-    if (difference >= twoHoursInMs) {
+    if (difference >= timeoutVal) {
       if (file === "info.md") return;
       fs.unlinkSync(filePath);
     }
@@ -35,4 +37,4 @@ const storageClear = async () => {
   logger.info("completed file cleanup ");
 };
 
-setInterval(storageClear, twoHoursInMs);
+setInterval(storageClear, timeoutVal);

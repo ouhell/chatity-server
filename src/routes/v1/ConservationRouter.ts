@@ -11,25 +11,32 @@ ConversationRouter.get(
   isAuthenticated(),
   MessageController.fetchMessages
 );
-const messageAudioUploader = multer({
+
+const messagesAudioUploader = multer({
   storage: multerStorage,
   limits: {
+    fileSize: 1000 * 1000 * 10, // 10 mb,
     files: 1,
-    fieldSize: 1000 * 1000 * 10, // 10 mega bytes
   },
 });
-const messagesImageUploader = multer({
+
+const messagesFileUploader = multer({
   storage: multerStorage,
   limits: {
-    files: 10,
-    fileSize: 1000 * 1000 * 5, // 5 mega bytes
+    // files: 20,
+    fileSize: 1024 * 1024 * 5, // 5 mega bytes
   },
 });
 
 ConversationRouter.post(
   "/api/v1/conversations/:conversationId/messages",
   isAuthenticated(),
-  messageAudioUploader.single("record"),
-  messagesImageUploader.array("images"),
+  messagesFileUploader.fields([
+    { name: "images", maxCount: 10 },
+    { name: "audio", maxCount: 1 },
+    { name: "files", maxCount: 5 },
+  ]),
+  // messagesAudioUploader.array("audio"),
+
   MessageController.postMessage
 );

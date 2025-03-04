@@ -4,6 +4,9 @@ import prisma from "../../database/databaseClient";
 import { getParamStr } from "../../utils/libs/params/paramsOperations";
 import { ApiError } from "@/utils/libs/errors/ApiError";
 import { z } from "zod";
+import sharp from "sharp";
+import { generateImageScalers } from "@/utils/libs/img/imageScaling";
+import { parseMessageFiles } from "@/utils/libs/upload/messageFileManagement";
 
 const FriendshipIdTemplate = z.object({
   friendAId: z.string().trim().min(1),
@@ -162,20 +165,24 @@ const checkMessagePostAccess = async (req: Request) => {
 };
 
 const postMessageBodyTemplate = z.object({
-  conversationId: z.string().trim().min(1),
+  // conversationId: z.string().trim().min(1),
   content: z.string().trim().min(1),
 });
 
 export const postMessage = errorCatch(async (req, res, next) => {
   const user = req.session.user!;
   //   const conversationId = getParamStr(req.query.conversationId) ?? req.params.conversationId;
-
+  const conversationId = req.params.conversationId;
   const body = postMessageBodyTemplate.parse(req.body);
 
-  const record = req.file;
-  if (record) {
-    console.log("audio file uploaded", record.filename);
+  const filesData = await parseMessageFiles(req);
+  if (filesData) {
+    for (const img of filesData.images) {
+      console.log("img", img);
+    }
   }
+
+  throw new Error("bad bad");
 
   const allowedAccess = await checkMessagePostAccess(req);
 
@@ -185,7 +192,7 @@ export const postMessage = errorCatch(async (req, res, next) => {
 
   const newMessage = await prisma.message.create({
     data: {
-      conversationId: body.conversationId,
+      conversationId: conversationId,
       content: body.content,
       senderId: user.id,
     },
