@@ -7,7 +7,7 @@ type ObjectUploadData = {
   format: string;
 };
 
-type UploadedImageData = {
+export type UploadedImageData = {
   original: ObjectUploadData;
   backup?: ObjectUploadData;
   metaData: ImageData["metaData"];
@@ -29,7 +29,8 @@ const s3 = new S3Client({
 
 export class OnlineStorage {
   public static async storeImage(data: ImageData): Promise<UploadedImageData> {
-    const key = data.metaData.name + crypto.randomUUID();
+    console.log("uploading ", data);
+    const key = crypto.randomUUID() + data.metaData.name;
     const command = new PutObjectCommand({
       Bucket: bucketName,
       Key: key,
@@ -44,7 +45,7 @@ export class OnlineStorage {
 
     if (data.downSizedImage) {
       const backupName = data.metaData.name + " (downsized)";
-      const backupKey = backupName + crypto.randomUUID();
+      const backupKey = crypto.randomUUID() + backupName;
       const newCommand = new PutObjectCommand({
         Bucket: bucketName,
         Key: backupKey,

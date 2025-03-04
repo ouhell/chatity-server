@@ -6,8 +6,15 @@ import { ApiError } from "@/utils/libs/errors/ApiError";
 import { z } from "zod";
 import sharp from "sharp";
 import { generateImageScalers } from "@/utils/libs/img/imageScaling";
-import { parseMessageFiles } from "@/utils/libs/upload/messageFileManagement";
-import { OnlineStorage } from "@/utils/libs/upload/OnlineStorage";
+import {
+  FilesData,
+  parseMessageFiles,
+} from "@/utils/libs/upload/messageFileManagement";
+import {
+  OnlineStorage,
+  UploadedImageData,
+} from "@/utils/libs/upload/OnlineStorage";
+import { Prisma } from "@prisma/client";
 
 const FriendshipIdTemplate = z.object({
   friendAId: z.string().trim().min(1),
@@ -170,6 +177,75 @@ const postMessageBodyTemplate = z.object({
   content: z.string().trim().min(1),
 });
 
+const uploadImages = async () => {};
+
+const saveImageFiles = async (filesData: FilesData) => {
+  const uploadedImages: UploadedImageData[] = [];
+
+  const images = filesData.images;
+
+  if (!images.length) return;
+
+  for (const img of images) {
+    const resp = await OnlineStorage.storeImage(img);
+    uploadedImages.push(resp);
+  }
+
+  const fileData = uploadedImages.flatMap((data) =>
+    data.backup
+      ? [
+          { ...data.original, metadata: data.metaData },
+          { ...data.backup, metadata: data.metaData },
+        ]
+      : { ...data.original, metadata: data.metaData }
+  );
+
+  const createdImageFiles = await prisma.file.createManyAndReturn({
+    data: fileData.map((img) => ({
+      name: img.name,
+      extension: img.format,
+      key: img.key,
+      type: "IMAGE",
+    })),
+    select: { id: true, key: true },
+  });
+
+  const mappedImageFiles = uploadedImages.map((img) => {
+    const originalFile = createdImageFiles.find(
+      (file) => file.key === img.original.key
+    )!;
+    let mappedObj = {
+      blurhash: img.blurhash,
+      original: { ...img.original, id: originalFile.id },
+      metadata: img.metaData,
+      backup: undefined,
+    };
+    if (img.backup) {
+      const backupFile = createdImageFiles.find(
+        (file) => file.key === img.backup?.key
+      )!;
+      return { ...mappedObj, backup: { ...img.backup, id: backupFile.id } };
+    }
+
+    return mappedObj;
+  });
+  const imageCreationClause: Prisma.MessageImageUncheckedCreateNestedManyWithoutMessageInput =
+    {
+      createMany: {
+        data: mappedImageFiles.map((img) => ({
+          height: img.metadata.height,
+          width: img.metadata.width,
+          size: img.metadata.size,
+          blurhash: img.blurhash,
+          imageId: img.original.id,
+          backupImageId: img.backup?.id,
+        })),
+      },
+    };
+
+  return imageCreationClause;
+};
+
 export const postMessage = errorCatch(async (req, res, next) => {
   const user = req.session.user!;
 
@@ -184,49 +260,33 @@ export const postMessage = errorCatch(async (req, res, next) => {
 
   const filesData = await parseMessageFiles(req);
 
-  const newMessage = await prisma.$transaction(async () => {
-    let createdFiles: string[] = [];
-    if (filesData) {
-      const images = filesData.images;
-
-      for (const img of images) {
-        const resp = await OnlineStorage.storeImage(img);
-        img.metaData.key = resp.key;
+  const newMessage = await prisma.$transaction(
+    async () => {
+      let imageCreationClause: Awaited<ReturnType<typeof saveImageFiles>> =
+        undefined;
+      if (filesData) {
+        imageCreationClause = await saveImageFiles(filesData);
       }
 
-      const ids = await prisma.file.createManyAndReturn({
-        data: images.map((img) => ({
-          name: img.metaData.name,
-          extension: img.metaData.format,
-          key: img.metaData.key!,
-          type: "IMAGE",
-          url: "",
-        })),
-        select: { id: true },
-      });
-
-      createdFiles = ids.map((val) => val.id);
+      console.log("clause", imageCreationClause);
 
       return await prisma.message.create({
         data: {
           conversationId: conversationId,
           content: body.content,
           senderId: user.id,
-          images: createdFiles.length
-            ? {
-                createMany: {
-                  data: createdFiles.map((id) => ({ imageId: id })),
-                  skipDuplicates: true,
-                },
-              }
-            : undefined,
+          images: imageCreationClause,
         },
         include: {
-          images: { include: { image: true } },
+          images: { include: { backupImage: true, image: true } },
         },
       });
+    },
+    {
+      // maxWait: 1000 * 60 * 5,
+      timeout: 1000 * 60 * 5,
     }
-  });
+  );
 
   if (!newMessage) {
     return next(ApiError.forbidden("failed to upload"));

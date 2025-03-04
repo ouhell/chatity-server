@@ -107,7 +107,7 @@ model MessageImage {
 model File {
   id                String         @id @default(uuid()) @db.Uuid
   type              FileType
-  url               String
+  url               String?
   key               String      
   extension         String
   name              String
