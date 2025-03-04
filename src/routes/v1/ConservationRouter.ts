@@ -24,28 +24,8 @@ const messagesFileUploader = multer({
   storage: multerStorage,
   limits: {
     // files: 20,
-    fileSize: 1000 * 1000 * 5, // 5 mega bytes
+    fileSize: 1024 * 1024 * 5, // 5 mega bytes
   },
-  // fileFilter: (_, file, cb) => {
-  //   console.log("file inspection ", file.fieldname, file.size);
-  //   file.
-  //   if (file.fieldname === "images") {
-  //     // filesize less than 5 mb accept the file
-  //     if (file.size <= 1000 * 1000 * 5) {
-  //       return cb(null, true);
-  //     }
-  //   }
-
-  //   if (file.fieldname === "audio") {
-  //     // file size less than 10 mb
-  //     if (file.size <= 1000 * 1000 * 10) {
-  //       return cb(null, true);
-  //     }
-  //   }
-
-  //   // automatic rejection
-  //   return cb(null, false);
-  // },
 });
 
 ConversationRouter.post(
