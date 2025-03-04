@@ -50,7 +50,7 @@ export const generateImageScalers = async (
     .resize({ width: 100, height: 100 })
     .ensureAlpha()
     .toBuffer({ resolveWithObject: true });
-
+  console.log("begin hashing ::::::::::::::");
   const blurHash = encode(
     new Uint8ClampedArray(raw.data),
     raw.info.width,

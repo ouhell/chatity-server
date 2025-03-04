@@ -6,7 +6,15 @@ import { ApiError } from "@/utils/libs/errors/ApiError";
 import { z } from "zod";
 import sharp from "sharp";
 import { generateImageScalers } from "@/utils/libs/img/imageScaling";
-import { parseMessageFiles } from "@/utils/libs/upload/messageFileManagement";
+import {
+  FilesData,
+  parseMessageFiles,
+} from "@/utils/libs/upload/messageFileManagement";
+import {
+  OnlineStorage,
+  UploadedImageData,
+} from "@/utils/libs/upload/OnlineStorage";
+import { Prisma } from "@prisma/client";
 
 const FriendshipIdTemplate = z.object({
   friendAId: z.string().trim().min(1),
@@ -169,35 +177,120 @@ const postMessageBodyTemplate = z.object({
   content: z.string().trim().min(1),
 });
 
-export const postMessage = errorCatch(async (req, res, next) => {
-  const user = req.session.user!;
-  //   const conversationId = getParamStr(req.query.conversationId) ?? req.params.conversationId;
-  const conversationId = req.params.conversationId;
-  const body = postMessageBodyTemplate.parse(req.body);
+const uploadImages = async () => {};
 
-  const filesData = await parseMessageFiles(req);
-  if (filesData) {
-    for (const img of filesData.images) {
-      console.log("img", img);
-    }
+const saveImageFiles = async (filesData: FilesData) => {
+  const uploadedImages: UploadedImageData[] = [];
+
+  const images = filesData.images;
+
+  if (!images.length) return;
+
+  for (const img of images) {
+    const resp = await OnlineStorage.storeImage(img);
+    uploadedImages.push(resp);
   }
 
-  throw new Error("bad bad");
+  const fileData = uploadedImages.flatMap((data) =>
+    data.backup
+      ? [
+          { ...data.original, metadata: data.metaData },
+          { ...data.backup, metadata: data.metaData },
+        ]
+      : { ...data.original, metadata: data.metaData }
+  );
+
+  const createdImageFiles = await prisma.file.createManyAndReturn({
+    data: fileData.map((img) => ({
+      name: img.name,
+      extension: img.format,
+      key: img.key,
+      type: "IMAGE",
+    })),
+    select: { id: true, key: true },
+  });
+
+  const mappedImageFiles = uploadedImages.map((img) => {
+    const originalFile = createdImageFiles.find(
+      (file) => file.key === img.original.key
+    )!;
+    let mappedObj = {
+      blurhash: img.blurhash,
+      original: { ...img.original, id: originalFile.id },
+      metadata: img.metaData,
+      backup: undefined,
+    };
+    if (img.backup) {
+      const backupFile = createdImageFiles.find(
+        (file) => file.key === img.backup?.key
+      )!;
+      return { ...mappedObj, backup: { ...img.backup, id: backupFile.id } };
+    }
+
+    return mappedObj;
+  });
+  const imageCreationClause: Prisma.MessageImageUncheckedCreateNestedManyWithoutMessageInput =
+    {
+      createMany: {
+        data: mappedImageFiles.map((img) => ({
+          height: img.metadata.height,
+          width: img.metadata.width,
+          size: img.metadata.size,
+          blurhash: img.blurhash,
+          imageId: img.original.id,
+          backupImageId: img.backup?.id,
+        })),
+      },
+    };
+
+  return imageCreationClause;
+};
+
+export const postMessage = errorCatch(async (req, res, next) => {
+  const user = req.session.user!;
 
   const allowedAccess = await checkMessagePostAccess(req);
 
   if (allowedAccess !== true) {
     return next(ApiError.forbidden(allowedAccess));
   }
+  //   const conversationId = getParamStr(req.query.conversationId) ?? req.params.conversationId;
+  const conversationId = req.params.conversationId;
+  const body = postMessageBodyTemplate.parse(req.body);
 
-  const newMessage = await prisma.message.create({
-    data: {
-      conversationId: conversationId,
-      content: body.content,
-      senderId: user.id,
+  const filesData = await parseMessageFiles(req);
+
+  const newMessage = await prisma.$transaction(
+    async () => {
+      let imageCreationClause: Awaited<ReturnType<typeof saveImageFiles>> =
+        undefined;
+      if (filesData) {
+        imageCreationClause = await saveImageFiles(filesData);
+      }
+
+      console.log("clause", imageCreationClause);
+
+      return await prisma.message.create({
+        data: {
+          conversationId: conversationId,
+          content: body.content,
+          senderId: user.id,
+          images: imageCreationClause,
+        },
+        include: {
+          images: { include: { backupImage: true, image: true } },
+        },
+      });
     },
-  });
+    {
+      // maxWait: 1000 * 60 * 5,
+      timeout: 1000 * 60 * 5,
+    }
+  );
 
+  if (!newMessage) {
+    return next(ApiError.forbidden("failed to upload"));
+  }
   res.status(201).json(newMessage);
 });
 

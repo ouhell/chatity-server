@@ -9,16 +9,17 @@ type ImageMetaData = {
   size: number;
   name: string;
   format: string;
+  key?: string;
 };
 
-type ImageData = {
+export type ImageData = {
   downSizedImage?: Buffer;
   blurHash?: string;
   originalImage: Buffer;
   metaData: ImageMetaData;
 };
 
-type FilesData = {
+export type FilesData = {
   images: ImageData[];
   audio?: Buffer;
 };
@@ -32,6 +33,7 @@ export const parseMessageFiles = async (
   if (uploads && !Array.isArray(uploads)) {
     const images = uploads.images;
     if (images && images.length > 0) {
+      console.log("uploading images", images.length);
       for (const img of images) {
         const { data, info } = await sharp(img.path).toBuffer({
           resolveWithObject: true,
@@ -52,7 +54,7 @@ export const parseMessageFiles = async (
         imagesData.push({
           blurHash: scallers.blurHash,
           downSizedImage: scallers.downSizedImg,
-          originalImage: img.buffer,
+          originalImage: scallers.original,
           metaData: {
             height,
             width,

@@ -92,8 +92,14 @@ model UserBlackList {
 model MessageImage {
   messageId String  @db.Uuid
   imageId   String  @db.Uuid
-  image     File    @relation(fields: [imageId], references: [id])
+  image     File    @relation(fields: [imageId], references: [id], name: "message_image-files")
+  backupImageId String? @db.Uuid
+  backupImage File? @relation(fields: [backupImageId] , references: [id] , name : "message_image_backup-files")
+  blurhash String?
   message   Message @relation(fields: [messageId], references: [id])
+  width Int
+  height Int
+  size Int
 
   @@id([messageId, imageId])
 }
@@ -101,11 +107,13 @@ model MessageImage {
 model File {
   id                String         @id @default(uuid()) @db.Uuid
   type              FileType
-  url               String
+  url               String?
+  key               String      
   extension         String
   name              String
   recordingMessages Message[]
-  messageImages     MessageImage[]
+  messageImages     MessageImage[] @relation(name: "message_image-files")
+  MessageBackupImages MessageImage[] @relation(name : "message_image_backup-files")
   imageUsers        User[]
   createdAt DateTime @db.Timestamp() @default(now())
 }
