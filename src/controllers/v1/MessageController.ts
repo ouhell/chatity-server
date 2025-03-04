@@ -162,19 +162,43 @@ const checkMessagePostAccess = async (req: Request) => {
 };
 
 const postMessageBodyTemplate = z.object({
-  conversationId: z.string().trim().min(1),
+  // conversationId: z.string().trim().min(1),
   content: z.string().trim().min(1),
 });
 
 export const postMessage = errorCatch(async (req, res, next) => {
   const user = req.session.user!;
   //   const conversationId = getParamStr(req.query.conversationId) ?? req.params.conversationId;
-
+  const conversationId = req.params.conversationId;
   const body = postMessageBodyTemplate.parse(req.body);
-
   const record = req.file;
   if (record) {
     console.log("audio file uploaded", record.filename);
+  }
+
+  const uploads = req.files;
+  if (uploads && !Array.isArray(uploads)) {
+    const images = uploads.images;
+    if (images && images.length > 0) {
+      for (const img of images) {
+        console.log("image uploaded", img.originalname);
+      }
+    }
+
+    const audio = uploads.audio;
+
+    if (audio && audio.length > 0) {
+      const audioFile = audio[0];
+      console.log("audio file uploaded", audioFile.filename);
+    }
+
+    const files = uploads.files;
+
+    if (files && files.length > 0) {
+      for (const file of files) {
+        console.log("uploaded file ", file.filename);
+      }
+    }
   }
 
   const allowedAccess = await checkMessagePostAccess(req);
@@ -185,7 +209,7 @@ export const postMessage = errorCatch(async (req, res, next) => {
 
   const newMessage = await prisma.message.create({
     data: {
-      conversationId: body.conversationId,
+      conversationId: conversationId,
       content: body.content,
       senderId: user.id,
     },
